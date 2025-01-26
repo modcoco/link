@@ -14,3 +14,9 @@ docker buildx build --platform linux/amd64,linux/arm64 \
     .
 
 ```
+
+确认 apiversion
+
+```bash
+kubectl api-resources | grep Gateway
+```
