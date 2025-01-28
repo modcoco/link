@@ -28,7 +28,7 @@ spec:
             prefix: / # 匹配根路径
       route:
         - destination:
-            host: link-svc.chess.svc.cluster.local # 路由到 Service
+            host: link-svc # 路由到 Service
             port:
               number: 3000 # 服务端口
 ---
