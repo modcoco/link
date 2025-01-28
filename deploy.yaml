@@ -16,7 +16,7 @@ spec:
 apiVersion: networking.istio.io/v1
 kind: VirtualService
 metadata:
-  name: my-virtualservice
+  name: chess-virtual-service
 spec:
   hosts:
     - "*" # 匹配所有主机
