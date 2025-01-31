@@ -1,0 +1,29 @@
+# 只验证 JWT 是否正确
+apiVersion: security.istio.io/v1beta1
+kind: RequestAuthentication
+metadata:
+  name: jwt-auth
+  namespace: istio-system  # istio-ingressgateway 通常部署在 istio-system 命名空间
+spec:
+  selector:
+    matchLabels:
+      istio: ingressgateway  # 匹配 istio-ingressgateway 的标签
+  jwtRules:
+    - issuer: "https://auth.example.com"
+      jwksUri: "https://auth.example.com/.well-known/jwks.json"
+---
+# 访问控制（基于角色、路径、来源等）
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: require-jwt
+  namespace: istio-system  # istio-ingressgateway 通常部署在 istio-system 命名空间
+spec:
+  selector:
+    matchLabels:
+      istio: ingressgateway  # 匹配 istio-ingressgateway 的标签
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            requestPrincipals: ["*"]  # 允许所有已验证的请求

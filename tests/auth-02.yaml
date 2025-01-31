@@ -1,0 +1,68 @@
+apiVersion: security.istio.io/v1beta1
+kind: RequestAuthentication
+metadata:
+  name: jwt-auth
+  namespace: default
+spec:
+  selector:
+    matchLabels:
+      app: my-service
+  jwtRules:
+  - issuer: "https://auth.example.com"  # 身份认证服务器
+    jwksUri: "https://auth.example.com/.well-known/jwks.json"  # 公钥地址
+    forwardOriginalToken: true  # 让后端能拿到 JWT
+
+---
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: require-auth
+  namespace: default
+spec:
+  selector:
+    matchLabels:
+      app: my-service
+  action: ALLOW
+  rules:
+  - from:
+    - source:
+        requestPrincipals: ["https://auth.example.com/*"]  # 必须有合法 JWT
+    to:
+    - operation:
+        paths: ["/admin", "/protected"]
+
+---
+# 所有进出服务的流量都会经过 Envoy Envoa
+apiVersion: networking.istio.io/v1alpha3
+kind: EnvoyFilter
+metadata:
+  name: external-auth
+  namespace: istio-system
+spec:
+  configPatches:
+  - applyTo: HTTP_FILTER
+    match:
+      context: SIDECAR_INBOUND
+      listener:
+        filterChain:
+          filter:
+            name: envoy.filters.network.http_connection_manager
+    patch:
+      operation: INSERT_BEFORE
+      value:
+        name: envoy.ext_authz
+        typed_config:
+          "@type": type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthz
+          http_service:
+            server_uri:
+              uri: http://auth-service.default.svc.cluster.local:8080
+              cluster: outbound|8080||auth-service.default.svc.cluster.local
+              timeout: 0.25s
+            authorization_request:
+              allowed_headers:
+                patterns:
+                  - exact: authorization  # 让 Auth Service 能拿到 Token
+            authorization_response:
+              allowed_upstream_headers:
+                patterns:
+                  - exact: x-auth-user  # 让上游服务能接收 Auth Service 结果
