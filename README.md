@@ -19,4 +19,7 @@ docker buildx build --platform linux/amd64,linux/arm64 \
 
 ```bash
 kubectl api-resources | grep Gateway
+
+kubectl apply -f deploy.yaml  -n default
+kubectl delete -f deploy.yaml  -n default
 ```
